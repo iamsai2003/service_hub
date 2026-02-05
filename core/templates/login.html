@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="glass-panel p-5" style="width: 100%; max-width: 450px;">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold">Welcome Back</h2>
+            <p class="text-white-50">Enter the portal to continue</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label text-white-50">Username</label>
+                {{ form.username }} 
+                </div>
+            <div class="mb-4">
+                <label class="form-label text-white-50">Password</label>
+                {{ form.password }}
+            </div>
+            <button type="submit" class="btn btn-neon w-100 py-2">LOGIN</button>
+        </form>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'register' %}" class="text-info text-decoration-none small">Create new account</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

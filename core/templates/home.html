@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .category-btn {
+        background: rgba(255,255,255,0.1);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.2);
+        transition: 0.3s;
+    }
+    .category-btn:hover, .category-btn.active {
+        background: var(--neon-blue);
+        border-color: var(--neon-blue);
+        box-shadow: 0 0 15px var(--neon-blue);
+    }
+    .service-card-glass {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: transform 0.3s;
+    }
+    .service-card-glass:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border-color: var(--neon-purple);
+    }
+</style>
+
+<div class="container py-5">
+    <div class="d-flex gap-3 overflow-auto mb-5 pb-2 justify-content-center">
+        <a href="/" class="btn category-btn rounded-pill px-4 py-2">All Services</a>
+        <a href="/?category=Home" class="btn category-btn rounded-pill px-4 py-2">Home</a>
+        <a href="/?category=Appliance" class="btn category-btn rounded-pill px-4 py-2">Appliance</a>
+        <a href="/?category=Cleaning" class="btn category-btn rounded-pill px-4 py-2">Cleaning</a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <h3 class="fw-bold mb-4" style="text-shadow: 0 0 10px rgba(255,255,255,0.5);">Available Services</h3>
+            <div class="row g-4">
+                {% for s in services %}
+                <div class="col-md-6">
+                    <div class="service-card-glass h-100 d-flex flex-column">
+                        <div class="position-relative">
+                            {% if s.image %}
+                            <img src="{{ s.image.url }}" class="w-100" style="height: 180px; object-fit: cover;">
+                            {% else %}
+                            <div class="bg-dark d-flex align-items-center justify-content-center text-secondary" style="height:180px">
+                                <i class="fa fa-cube fa-2x"></i>
+                            </div>
+                            {% endif %}
+                            <div class="position-absolute top-0 end-0 p-2">
+                                <span class="badge bg-black bg-opacity-50 backdrop-blur">
+                                    <i class="fa fa-star text-warning"></i> {{ s.average_rating|floatformat:1 }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 d-flex flex-column flex-grow-1">
+                            <h5 class="fw-bold text-white">{{ s.name }}</h5>
+                            <p class="text-white-50 small flex-grow-1">{{ s.description|truncatewords:10 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary">
+                                <h4 class="text-info m-0 fw-bold">₹{{ s.price }}</h4>
+                                <button class="btn btn-sm btn-outline-light rounded-pill px-3" 
+                                    onclick="addToCart('{{ s.id }}', '{{ s.name }}', {{ s.price }})">
+                                    Add to Cart <i class="fa fa-plus ms-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="glass-panel p-4 position-sticky" style="top: 100px;">
+                <h4 class="fw-bold mb-3 border-bottom border-secondary pb-2">Your Cart</h4>
+                
+                <div id="cart-list" class="my-3" style="min-height:100px;">
+                    <p class="text-white-50 text-center pt-4">Select services to begin...</p>
+                </div>
+                
+                <div class="d-flex justify-content-between fw-bold fs-5 border-top border-secondary pt-3 mb-3">
+                    <span>Total</span>
+                    <span class="text-info">₹<span id="cart-total">0</span></span>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="cart_json" id="cart_json">
+                    
+                    <div class="mb-3">
+                        <label class="small text-white-50 mb-1">Customer Details</label>
+                        {{ form.customer_name }}
+                    </div>
+                    <div class="mb-3">{{ form.customer_phone }}</div>
+                    <div class="mb-3">{{ form.address }}</div>
+                    
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <label class="small text-white-50 mb-1">Date</label>
+                            {{ form.booking_date }}
+                        </div>
+                        <div class="col-6">
+                            <label class="small text-white-50 mb-1">Time</label>
+                            {{ form.booking_time }}
+                        </div>
+                    </div>
+
+                    <button class="btn btn-neon w-100 py-3 rounded-3 shadow-lg">
+                        CONFIRM BOOKING <i class="fa fa-rocket ms-2"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// (The Javascript Logic Remains EXACTLY the same to ensure functionality)
+let cart = {};
+
+function addToCart(id, name, price) {
+    if (cart[id]) cart[id].qty++;
+    else cart[id] = {id, name, price, qty: 1};
+    updateCartUI();
+}
+
+function updateQty(id, change) {
+    cart[id].qty += change;
+    if (cart[id].qty <= 0) delete cart[id];
+    updateCartUI();
+}
+
+function updateCartUI() {
+    let html = '';
+    let total = 0;
+    let items = [];
+    
+    for (let id in cart) {
+        let item = cart[id];
+        total += item.price * item.qty;
+        items.push({id: id, quantity: item.qty});
+        
+        html += `
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background:rgba(255,255,255,0.05)">
+            <div>
+                <div class="fw-bold small text-white">${item.name}</div>
+                <div class="text-info small">₹${item.price} x ${item.qty}</div>
+            </div>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-light border-0" onclick="updateQty('${id}', -1)">-</button>
+                <button type="button" class="btn btn-sm text-white disabled" style="width:30px">${item.qty}</button>
+                <button type="button" class="btn btn-outline-light border-0" onclick="updateQty('${id}', 1)">+</button>
+            </div>
+        </div>`;
+    }
+    
+    document.getElementById('cart-list').innerHTML = html || '<p class="text-white-50 text-center pt-4">Cart is empty</p>';
+    document.getElementById('cart-total').innerText = total;
+    document.getElementById('cart_json').value = JSON.stringify(items);
+}
+</script>
+{% endblock %}
